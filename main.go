@@ -25,7 +25,7 @@ const difficulty = 1
 type Block struct {
 	Index      int
 	Timestamp  string
-	BPM        int
+	Data       int
 	Hash       string
 	PrevHash   string
 	Difficulty int
@@ -35,9 +35,9 @@ type Block struct {
 // Blockchain is a series of validated Blocks
 var Blockchain []Block
 
-// Message takes incoming JSON payload for writing heart rate
+// Message takes incoming JSON payload for writing data
 type Message struct {
-	BPM int
+	Data int
 }
 
 var mutex = &sync.Mutex{}
@@ -100,7 +100,7 @@ func handleGetBlockchain(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(bytes))
 }
 
-// takes JSON payload as an input for heart rate (BPM)
+// takes JSON payload as an input (Data)
 func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var m Message
@@ -114,7 +114,7 @@ func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
 
 	//ensure atomicity when creating new block
 	mutex.Lock()
-	newBlock := generateBlock(Blockchain[len(Blockchain)-1], m.BPM)
+	newBlock := generateBlock(Blockchain[len(Blockchain)-1], m.Data)
 	mutex.Unlock()
 
 	if isBlockValid(newBlock, Blockchain[len(Blockchain)-1]) {
@@ -157,7 +157,7 @@ func isBlockValid(newBlock, oldBlock Block) bool {
 
 // SHA256 hasing
 func calculateHash(block Block) string {
-	record := strconv.Itoa(block.Index) + block.Timestamp + strconv.Itoa(block.BPM) + block.PrevHash + block.Nonce
+	record := strconv.Itoa(block.Index) + block.Timestamp + strconv.Itoa(block.Data) + block.PrevHash + block.Nonce
 	h := sha256.New()
 	h.Write([]byte(record))
 	hashed := h.Sum(nil)
@@ -165,14 +165,14 @@ func calculateHash(block Block) string {
 }
 
 // create a new block using previous block's hash
-func generateBlock(oldBlock Block, BPM int) Block {
+func generateBlock(oldBlock Block, Data int) Block {
 	var newBlock Block
 
 	t := time.Now()
 
 	newBlock.Index = oldBlock.Index + 1
 	newBlock.Timestamp = t.String()
-	newBlock.BPM = BPM
+	newBlock.Data = Data
 	newBlock.PrevHash = oldBlock.Hash
 	newBlock.Difficulty = difficulty
 
